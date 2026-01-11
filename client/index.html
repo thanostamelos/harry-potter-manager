@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Hogwarts Spell & Potion Manager</title>
+
+  <link rel="stylesheet" href="./assets/styles/reset.css" />
+  <link rel="stylesheet" href="./assets/styles/variables.css" />
+  <link rel="stylesheet" href="./assets/styles/main.css" />
+</head>
+<body>
+<header>
+  <h1>Hogwarts Spell & Potion Manager</h1>
+</header>
+
+<section class="controls">
+  <input
+          type="text"
+          id="searchInput"
+          placeholder="Search spell..."
+  />
+</section>
+
+<section class="table-container">
+  <table id="dataTable">
+    <thead>
+    <tr>
+      <th>Name</th>
+      <th>Type</th>
+      <th>Element</th>
+      <th>Rarity</th>
+      <th>Description</th>
+      <th>Actions</th>
+    </tr>
+    </thead>
+    <tbody id="tableBody"></tbody>
+  </table>
+</section>
+
+<!-- Modal -->
+<div id="modal" class="modal hidden">
+  <div class="modal-content">
+    <h2>Edit spells</h2>
+
+    <input type="text" id="editName" />
+    <input type="text" id="editType" />
+    <input type="text" id="editElement" />
+    <input type="text" id="editRarity" />
+    <input type="text" id="editDescription" />
+
+    <div class="modal-actions">
+      <button id="saveBtn">Save</button>
+      <button id="deleteBtn" class="danger">Delete</button>
+      <button id="closeBtn">Cancel</button>
+    </div>
+  </div>
+</div>
+
+<script type="module" src="./js/app.js"></script>
+</body>
+
+</html>
