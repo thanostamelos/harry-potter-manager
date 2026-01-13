@@ -4,6 +4,7 @@ let selectedId = null;
 
 const tableBody = document.getElementById("tableBody");
 const modal = document.getElementById("modal");
+const confirmationModal = document.getElementById("confirmationModal");
 const searchInput = document.getElementById("searchInput");
 
 const editName = document.getElementById("editName");
@@ -19,6 +20,8 @@ const deleteBtn = document.getElementById("deleteBtn");
 const closeBtn = document.getElementById("closeBtn");
 const confirmAddButton = document.getElementById("confirmAddButton");
 const loadingOverlay = document.getElementById("loadingOverlay");
+const confirmAction = document.getElementById("confirmActionBtn");
+const cancelDelete = document.getElementById("cancelBtn");
 
 const showLoading = () => loadingOverlay.classList.remove("hidden");
 const hideLoading = () => loadingOverlay.classList.add("hidden");
@@ -27,6 +30,11 @@ const modalTitle = document.getElementById("modalTitle");
 
 const renderTable = (items) => {
     tableBody.innerHTML = "";
+
+    if (items.length === 0) {
+        tableBody.innerHTML = "<tr><td colspan='9' style='text-align: center;'>No items found</td></tr>";
+        return;
+    }
 
     items.forEach((item, index) => {
         const tr = document.createElement("tr");
@@ -70,12 +78,8 @@ const renderTable = (items) => {
 
         // 4. Delete
         tr.querySelector(".delete-btn").addEventListener("click", async () => {
-            if (confirm(`Delete ${item.name}?`)) {
-                showLoading();
-                await deleteItem(item.id);
-                await loadItems();
-                hideLoading();
-            }
+            selectedId = item.id;
+            openConfirmationModal();
         });
         tableBody.appendChild(tr);
     });
@@ -104,9 +108,18 @@ const openModal = (item) => {
     modal.classList.remove("hidden");
 }
 
+const openConfirmationModal = () => {
+    confirmationModal.classList.remove("hidden");
+}
+
+const closeConfirmationModal = () => {
+    confirmationModal.classList.add("hidden");
+}
+
 const closeModal = () => {
     modal.classList.add("hidden");
 }
+
 
 // Open modal for the creation
 addBtn.addEventListener("click", () => {
@@ -127,17 +140,22 @@ saveBtn.addEventListener("click", async () => {
 });
 
 // Delete
-deleteBtn.addEventListener("click", async () => {
-    if (!confirm("Are you sure?")) return;
+confirmAction.addEventListener("click", async () => {
     showLoading();
     try {
         await deleteItem(selectedId);
         await loadItems();
+        closeConfirmationModal();
         closeModal();
     } finally {
         hideLoading();
     }
 });
+
+deleteBtn.addEventListener("click", () => {
+    openConfirmationModal();
+});
+cancelDelete.addEventListener("click", () => closeConfirmationModal());
 
 // create api
 confirmAddButton.addEventListener("click", async () => {
