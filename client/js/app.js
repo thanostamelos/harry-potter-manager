@@ -1,8 +1,50 @@
 import {createItem, deleteItem, getItems, updateStatus, upgradePower} from "./services/api.js";
+import {hideLoading, showLoading, toggleModal} from "./utils/ui.js";
+import {createTableRow} from "./components/tableRenderer.js";
 
 let selectedId = null;
-
 const tableBody = document.getElementById("tableBody");
+
+// fetch items from the backend
+const loadItems = async () => {
+    showLoading();
+    try {
+        const items = await getItems();
+        renderTable(items);
+    } catch (error) {
+        console.error("Failed to load items:", error);
+    } finally {
+        hideLoading();
+    }
+}
+
+const renderTable = (items) => {
+    tableBody.innerHTML = "";
+    if (items.length === 0) {
+        tableBody.innerHTML = "<tr><td colspan='9' style='text-align: center;'>No items found</td></tr>";
+        return;
+    }
+
+    items.forEach((item, index) => {
+        const row = createTableRow(item, index, {
+            onStatus: async (id) => {
+                await updateStatus(id);
+                loadItems();
+            },
+            onUpgrade: async (id) => {
+                await upgradePower(id);
+                loadItems();
+            },
+            onEdit: (item) => openEditModal(item),
+            onDelete: (id) => {
+                selectedId = id;
+                toggleModal("confirmationModal", true);
+            }
+        });
+        tableBody.appendChild(row);
+    });
+};
+
 const modal = document.getElementById("modal");
 const confirmationModal = document.getElementById("confirmationModal");
 const searchInput = document.getElementById("searchInput");
@@ -23,74 +65,7 @@ const loadingOverlay = document.getElementById("loadingOverlay");
 const confirmAction = document.getElementById("confirmActionBtn");
 const cancelDelete = document.getElementById("cancelBtn");
 
-const showLoading = () => loadingOverlay.classList.remove("hidden");
-const hideLoading = () => loadingOverlay.classList.add("hidden");
-
 const modalTitle = document.getElementById("modalTitle");
-
-const renderTable = (items) => {
-    tableBody.innerHTML = "";
-
-    if (items.length === 0) {
-        tableBody.innerHTML = "<tr><td colspan='9' style='text-align: center;'>No items found</td></tr>";
-        return;
-    }
-
-    items.forEach((item, index) => {
-        const tr = document.createElement("tr");
-
-        tr.innerHTML = `
-      <td>${index + 1}</td>
-      <td>${item.name}</td>
-      <td>${item.type}</td>
-      <td>${item.element}</td>
-      <td>${item.power}</td>
-      <td>${item.rarity}</td>
-      <td>${item.description}</td>
-      <td>${item.status}</td>
-      <td class="actions-cell">
-        <button class="action-btn status-btn" title="Toggle Status"><i class="ti ti-refresh"></i></button>
-        <button class="action-btn upgrade-btn" title="Upgrade Power +5"><i class="ti ti-bolt"></i></button>
-        <button class="action-btn edit-btn" title="Edit Item"><i class="ti ti-edit"></i></button>
-        <button class="action-btn delete-btn" title="Delete Item"><i class="ti ti-trash"></i></button>
-      </td>
-    `;
-        // 1. Change Status
-        tr.querySelector(".status-btn").addEventListener("click", async () => {
-            showLoading();
-            await updateStatus(item.id);
-            await loadItems();
-            hideLoading();
-        });
-
-        // 2. Upgrade Power
-        tr.querySelector(".upgrade-btn").addEventListener("click", async () => {
-            showLoading();
-            await upgradePower(item.id);
-            await loadItems();
-            hideLoading();
-        });
-
-        // 3. Edit Modal
-        tr.querySelector(".edit-btn").addEventListener("click", () => {
-            openModal(item);
-        });
-
-        // 4. Delete
-        tr.querySelector(".delete-btn").addEventListener("click", async () => {
-            selectedId = item.id;
-            openConfirmationModal();
-        });
-        tableBody.appendChild(tr);
-    });
-}
-
-// fetch items from the backend
-const loadItems = async () => {
-    console.log("loading items...");
-    const items = await getItems();
-    renderTable(items);
-}
 
 const openModal = (item) => {
     modalTitle.innerText = item ? "Edit Item" : "Add Item";
@@ -102,30 +77,16 @@ const openModal = (item) => {
     editRarity.value = item?.rarity ?? "Common";
     editDescription.value = item?.description ?? "";
     editStatus.value = item?.status ?? "";
+
     saveBtn.style.display = item ? "inline-block" : 'none';
     deleteBtn.style.display = item ? "inline-block" : 'none';
     confirmAddButton.style.display = item ? "none" : 'inline-block';
-    modal.classList.remove("hidden");
-}
 
-const openConfirmationModal = () => {
-    confirmationModal.classList.remove("hidden");
+    toggleModal("modal", true);
 }
-
-const closeConfirmationModal = () => {
-    confirmationModal.classList.add("hidden");
-}
-
-const closeModal = () => {
-    modal.classList.add("hidden");
-}
-
 
 // Open modal for the creation
-addBtn.addEventListener("click", () => {
-    console.log("add item");
-    openModal(null)
-});
+addBtn.addEventListener("click", () => openModal(null));
 
 // Update
 saveBtn.addEventListener("click", async () => {
@@ -133,29 +94,27 @@ saveBtn.addEventListener("click", async () => {
     try {
         await updateStatus(selectedId);
         await loadItems();
-        closeModal();
+        toggleModal("modal", false);
     } finally {
         hideLoading();
     }
 });
 
-// Delete
 confirmAction.addEventListener("click", async () => {
     showLoading();
     try {
         await deleteItem(selectedId);
         await loadItems();
-        closeConfirmationModal();
-        closeModal();
+        toggleModal("confirmationModal", false);
+        toggleModal("modal", false);
     } finally {
         hideLoading();
     }
 });
 
-deleteBtn.addEventListener("click", () => {
-    openConfirmationModal();
-});
-cancelDelete.addEventListener("click", () => closeConfirmationModal());
+deleteBtn.addEventListener("click", () => toggleModal("confirmationModal", true));
+cancelDelete.addEventListener("click", () => toggleModal("confirmationModal", false));
+closeBtn.addEventListener("click", () => toggleModal("modal", false));
 
 // create api
 confirmAddButton.addEventListener("click", async () => {
@@ -163,7 +122,7 @@ confirmAddButton.addEventListener("click", async () => {
         name: editName.value,
         type: editType.value,
         element: editElement.value,
-        power: editRarity.value,
+        power: 100,
         rarity: editRarity.value,
         description: editDescription.value,
         status: editStatus.value
@@ -171,13 +130,9 @@ confirmAddButton.addEventListener("click", async () => {
     showLoading();
 
     try {
-        const result = await createItem(newItem);
-        if (result.message) {
-            alert(result.message);
-        } else {
-            await loadItems();
-            closeModal();
-        }
+        await createItem(newItem);
+        await loadItems();
+        toggleModal("modal", false);
     } catch (error) {
         console.error("Error creating item:", error);
     } finally {
@@ -195,12 +150,8 @@ searchInput.addEventListener("input", async (e) => {
     renderTable(filtered);
 });
 
-closeBtn.addEventListener("click", closeModal);
-
 window.addEventListener("click", (event) => {
-    if (event.target === modal) {
-        closeModal();
-    }
+    if (event.target === modal) toggleModal("modal", false);
 });
 
 loadItems();
