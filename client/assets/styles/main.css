@@ -12,6 +12,10 @@ header {
     margin-bottom: 1rem;
 }
 
+#addBtn {
+    margin-left: 10px;
+}
+
 input {
     padding: 0.5rem;
     width: 300px;
@@ -20,7 +24,16 @@ input {
 /* Table */
 .table-container {
     max-width: 100%;
+    max-height: calc(100vh - 200px);
+    overflow-y: auto;
     overflow-x: auto;
+    border-bottom: 1px solid #ddd;
+    margin-top: 1rem;
+}
+
+#dataTable {
+    width: 95%;
+    margin: 0 auto;
 }
 
 table {
@@ -28,6 +41,38 @@ table {
     max-width: 1200px;
     margin: auto;
     border-collapse: collapse;
+}
+
+/*.actions-cell {*/
+/*    display: flex;*/
+/*    flex-direction: column;*/
+/*}*/
+
+.action-btn {
+    background: none;
+    border: none;
+    padding: 5px;
+    font-size: 1.2rem;
+    transition: transform 0.2s, color 0.2s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.action-btn:hover {
+    transform: scale(1.2);
+}
+
+.status-btn { color: #2980b9; }
+.upgrade-btn { color: #f1c40f; }
+.edit-btn { color: #27ae60; }
+.delete-btn { color: #e74c3c; }
+
+/* Sticky Headers */
+thead th {
+    position: sticky;
+    top: 0;
+    box-shadow: 0 2px 2px -1px rgba(0, 0, 0, 0.2);
 }
 
 th, td {
@@ -54,7 +99,7 @@ button.danger {
 .modal {
     position: fixed;
     inset: 0;
-    background: rgba(0,0,0,0.5);
+    background: rgba(0, 0, 0, 0.5);
     display: flex;
     align-items: center;
     justify-content: center;
@@ -67,16 +112,52 @@ button.danger {
 .modal-content {
     background: white;
     padding: 1rem;
-    width: 400px;
+    width: 500px;
     border-radius: 6px;
 }
 
+.modal-title {
+    margin-top: -2px;
+}
+
 .modal-content input {
-    width: 100%;
+    width: 90%;
     margin-bottom: 0.5rem;
 }
 
 .modal-actions {
     display: flex;
     justify-content: space-between;
+}
+
+
+.loading-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.7);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    z-index: 2000;
+    color: white;
+}
+
+.loading-overlay.hidden {
+    display: none;
+}
+
+.spinner {
+    width: 50px;
+    height: 50px;
+    border: 5px solid #f3f3f3;
+    border-top: 5px solid #d4af37;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+    margin-bottom: 10px;
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
 }

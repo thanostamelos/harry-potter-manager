@@ -1,95 +1,4 @@
-let data = [
-    {
-        id: 1,
-        name: "Expelliarmus",
-        type: "Charm",
-        element: "Disarming",
-        rarity: "Common",
-        description: "Disarms your opponent by forcing them to release whatever they are holding.",
-        status: "learned"
-    },
-    {
-        id: 2,
-        name: "Lumos",
-        type: "Charm",
-        element: "Light",
-        rarity: "Common",
-        description: "Causes the tip of the caster’s wand to emit light.",
-        status: "learned"
-    },
-    {
-        id: 3,
-        name: "Alohomora",
-        type: "Charm",
-        element: "Unlocking",
-        rarity: "Common",
-        description: "Unlocks doors and other objects that are locked.",
-        status: "learned"
-    },
-    {
-        id: 4,
-        name: "Wingardium Leviosa",
-        type: "Charm",
-        element: "Levitation",
-        rarity: "Common",
-        description: "Makes objects levitate and allows the caster to move them through the air.",
-        status: "learned"
-    },
-    {
-        id: 5,
-        name: "Avada Kedavra",
-        type: "Curse",
-        element: "Killing",
-        rarity: "Legendary",
-        description: "Causes instant death to the victim. One of the Unforgivable Curses.",
-        status: "learned"
-    },
-    {
-        id: 6,
-        name: "Crucio",
-        type: "Curse",
-        element: "Pain",
-        rarity: "Legendary",
-        description: "Inflicts intense, excruciating pain on the victim. Unforgivable Curse.",
-        status: "learned"
-    },
-    {
-        id: 7,
-        name: "Imperio",
-        type: "Curse",
-        element: "Control",
-        rarity: "Legendary",
-        description: "Places the victim completely under the caster’s control. Unforgivable Curse.",
-        status: "learned"
-    },
-    {
-        id: 8,
-        name: "Protego",
-        type: "Charm",
-        element: "Shielding",
-        rarity: "Rare",
-        description: "Creates a magical barrier to deflect spells and physical attacks.",
-        status: "learned"
-    },
-    {
-        id: 9,
-        name: "Rictusempra",
-        type: "Charm",
-        element: "Tickling",
-        rarity: "Uncommon",
-        description: "Causes the target to laugh uncontrollably, rendering them unable to fight properly.",
-        status: "learned"
-    },
-    {
-        id: 10,
-        name: "Sectumsempra",
-        type: "Curse",
-        element: "Slashing",
-        rarity: "Rare",
-        description: "Causes deep cuts to appear on the victim’s body, as if slashed by an invisible sword.",
-        status: "learned"
-    }
-];
+import {createItem, deleteItem, getItems, updateStatus, upgradePower} from "./services/api.js";
 
 let selectedId = null;
 
@@ -98,76 +7,170 @@ const modal = document.getElementById("modal");
 const searchInput = document.getElementById("searchInput");
 
 const editName = document.getElementById("editName");
-const editType = document.getElementById("editHouse");
+const editType = document.getElementById("editType");
 const editElement = document.getElementById("editElement");
 const editRarity = document.getElementById("editRarity");
 const editDescription = document.getElementById("editDescription");
 const editStatus = document.getElementById("editStatus");
 
+const addBtn = document.getElementById("addBtn");
 const saveBtn = document.getElementById("saveBtn");
 const deleteBtn = document.getElementById("deleteBtn");
 const closeBtn = document.getElementById("closeBtn");
+const confirmAddButton = document.getElementById("confirmAddButton");
+const loadingOverlay = document.getElementById("loadingOverlay");
+
+const showLoading = () => loadingOverlay.classList.remove("hidden");
+const hideLoading = () => loadingOverlay.classList.add("hidden");
+
+const modalTitle = document.getElementById("modalTitle");
 
 const renderTable = (items) => {
     tableBody.innerHTML = "";
 
-    items.forEach(item => {
+    items.forEach((item, index) => {
         const tr = document.createElement("tr");
 
         tr.innerHTML = `
+      <td>${index + 1}</td>
       <td>${item.name}</td>
       <td>${item.type}</td>
       <td>${item.element}</td>
+      <td>${item.power}</td>
       <td>${item.rarity}</td>
       <td>${item.description}</td>
       <td>${item.status}</td>
-      <td>
-        <button data-id="${item.id}">Edit</button>
+      <td class="actions-cell">
+        <button class="action-btn status-btn" title="Toggle Status"><i class="ti ti-refresh"></i></button>
+        <button class="action-btn upgrade-btn" title="Upgrade Power +5"><i class="ti ti-bolt"></i></button>
+        <button class="action-btn edit-btn" title="Edit Item"><i class="ti ti-edit"></i></button>
+        <button class="action-btn delete-btn" title="Delete Item"><i class="ti ti-trash"></i></button>
       </td>
     `;
+        // 1. Change Status
+        tr.querySelector(".status-btn").addEventListener("click", async () => {
+            showLoading();
+            await updateStatus(item.id);
+            await loadItems();
+            hideLoading();
+        });
 
-        tr.querySelector("button").addEventListener("click", () => openModal(item));
+        // 2. Upgrade Power
+        tr.querySelector(".upgrade-btn").addEventListener("click", async () => {
+            showLoading();
+            await upgradePower(item.id);
+            await loadItems();
+            hideLoading();
+        });
+
+        // 3. Edit Modal
+        tr.querySelector(".edit-btn").addEventListener("click", () => {
+            openModal(item);
+        });
+
+        // 4. Delete
+        tr.querySelector(".delete-btn").addEventListener("click", async () => {
+            if (confirm(`Delete ${item.name}?`)) {
+                showLoading();
+                await deleteItem(item.id);
+                await loadItems();
+                hideLoading();
+            }
+        });
         tableBody.appendChild(tr);
     });
 }
 
-function openModal(item) {
-    selectedId = item.id;
-    editName.value = item.name;
-    editType.value = item.type;
-    editElement.value = item.element;
-    editRarity.value = item.rarity;
-    editDescription.value = item.description;
-    editStatus.value = item.status;
+// fetch items from the backend
+const loadItems = async () => {
+    console.log("loading items...");
+    const items = await getItems();
+    renderTable(items);
+}
+
+const openModal = (item) => {
+    modalTitle.innerText = item ? "Edit Item" : "Add Item";
+
+    selectedId = item?.id ?? null;
+    editName.value = item?.name ?? "";
+    editType.value = item?.type ?? "Spell";
+    editElement.value = item?.element ?? "";
+    editRarity.value = item?.rarity ?? "Common";
+    editDescription.value = item?.description ?? "";
+    editStatus.value = item?.status ?? "";
+    saveBtn.style.display = item ? "inline-block" : 'none';
+    deleteBtn.style.display = item ? "inline-block" : 'none';
+    confirmAddButton.style.display = item ? "none" : 'inline-block';
     modal.classList.remove("hidden");
 }
 
-function closeModal() {
+const closeModal = () => {
     modal.classList.add("hidden");
 }
 
-saveBtn.addEventListener("click", () => {
-    const item = data.find(d => d.id === selectedId);
-    item.name = editName.value;
-    item.type = editType.value;
-    item.element = editElement.value;
-    item.rarity = editRarity.value;
-    item.description = editDescription.value;
-    item.status = editStatus.value;
-    renderTable(data);
-    closeModal();
+// Open modal for the creation
+addBtn.addEventListener("click", () => {
+    console.log("add item");
+    openModal(null)
 });
 
-
-deleteBtn.addEventListener("click", () => {
-    data = data.filter(d => d.id !== selectedId);
-    renderTable(data);
-    closeModal();
+// Update
+saveBtn.addEventListener("click", async () => {
+    showLoading();
+    try {
+        await updateStatus(selectedId);
+        await loadItems();
+        closeModal();
+    } finally {
+        hideLoading();
+    }
 });
 
-searchInput.addEventListener("input", (e) => {
+// Delete
+deleteBtn.addEventListener("click", async () => {
+    if (!confirm("Are you sure?")) return;
+    showLoading();
+    try {
+        await deleteItem(selectedId);
+        await loadItems();
+        closeModal();
+    } finally {
+        hideLoading();
+    }
+});
+
+// create api
+confirmAddButton.addEventListener("click", async () => {
+    const newItem = {
+        name: editName.value,
+        type: editType.value,
+        element: editElement.value,
+        power: editRarity.value,
+        rarity: editRarity.value,
+        description: editDescription.value,
+        status: editStatus.value
+    }
+    showLoading();
+
+    try {
+        const result = await createItem(newItem);
+        if (result.message) {
+            alert(result.message);
+        } else {
+            await loadItems();
+            closeModal();
+        }
+    } catch (error) {
+        console.error("Error creating item:", error);
+    } finally {
+        hideLoading();
+    }
+});
+
+searchInput.addEventListener("input", async (e) => {
     const value = e.target.value.toLowerCase();
-    const filtered = data.filter(item =>
+    const items = await getItems();
+    const filtered = items.filter(item =>
         item.name.toLowerCase().includes(value) ||
         item.status.toLowerCase().includes(value)
     );
@@ -176,4 +179,10 @@ searchInput.addEventListener("input", (e) => {
 
 closeBtn.addEventListener("click", closeModal);
 
-renderTable(data);
+window.addEventListener("click", (event) => {
+    if (event.target === modal) {
+        closeModal();
+    }
+});
+
+loadItems();
